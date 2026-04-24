@@ -59,6 +59,43 @@ jobs:
 #          path: "*.png"
 #          retention-days: 3
 
+      - name: 更新下次运行时间并提交
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+        run: |
+          python3 << 'EOF'
+          import re
+          import random
+          
+          workflow_file = '.github/workflows/Weirdhost_renew.yml'
+          
+          with open(workflow_file, 'r', encoding='utf-8') as f:
+              content = f.read()
+          
+          random_minute = random.randint(0, 59)
+          new_cron = f"{random_minute} 4 * * *"
+          
+          new_content = re.sub(
+              r"- cron: '.*?'",
+              f"- cron: '{new_cron}'",
+              content,
+              count=1
+          )
+          
+          with open(workflow_file, 'w', encoding='utf-8') as f:
+              f.write(new_content)
+          
+          print(f"✅ 已更新 cron: {new_cron}")
+          EOF
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/Weirdhost_renew.yml
+          git commit -m "🚀 auto: 更新下次运行时间 (4点随机)" || echo "无变更"
+          
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git push
+
       - name: 清理旧的工作流运行记录
         uses: Mattraks/delete-workflow-runs@v2
         with:
